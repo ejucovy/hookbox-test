@@ -1,37 +1,65 @@
 <html>
   <head>
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js"></script>
     <script type="text/javascript" src="http://worldofbears.net:2974/static/hookbox.js"></script>
   </head>
   <body>
     <script type="text/javascript">
-      window.onload = function() {
+    window.onload = function() {
       var conn = hookbox.connect('http://worldofbears.net:2974');
       conn.onError = function(err) { alert("connection failed: " + err.msg); };
 
       var subscription = null;
       conn.onSubscribed = function(channelName, _subscription) {
         subscription = _subscription;
-        foo = subscription;
         subscription.onPublish = function(frame) {
-          id = frame.payload[0];
-          pos = frame.payload[1];
-          $("#"+id).offset(pos);
+          var id = frame.payload["id"];
+          var pos = frame.payload["pos"];
+          if($("#"+id).length) {
+            $("#"+id).offset(pos);
+          } else {
+            console.log("adding div", id);
+            addDiv(id, pos);
+          }
         };
       };
       conn.subscribe("chan1");
       var pushPos = function(ev, ui) {
-        pos = ui.offset;
-        id = $(ui.helper).attr("id");
-        data = [id, pos];
+        var pos = ui.offset;
+        var id = $(ui.helper).attr("id");
+        var data = {};
+        data.id = id; data.pos = pos;
         conn.publish("chan1", data);
       };
-      $(".drag").draggable({stop: pushPos});
-      }
-    </script>
+      $(".drag").draggable({drag: pushPos});
+      $(".drag").bind("click", false);
+      $("#container").click(function(e) {
+        var pos = {"top": e.offsetY, "left": e.offsetX};
+        var id = "div"+$("div").length+1;
+        addDiv(id, pos);
+        var data = {};
+        data.id = id; data.pos = pos;
+        conn.publish("chan1", data);
+      });
 
-    <div id="div1" class="drag">Drag me!</div>
-    <div id="div2" class="drag">Or drag me</div>
+      var addDiv = function(id, pos) {
+        $("<div />").addClass("drag")
+          .css("position", "absolute")
+          .offset(pos)
+          .bind("click", false)
+          .draggable({drag: pushPos})
+          .attr("id", "div"+$("div").length+1)
+          .text("Drag me!")
+          .appendTo("body");
+      }
+    }
+    </script>
+    <div id="container">
+    {{for item in data}}
+    <div style="position: absolute; top: {{item['pos']['top']}}; left: {{item['pos']['left']}}"
+	 id="{{item['id']}}" class="drag">Drag me!</div>
+    {{endfor}}
+    </div>
   </body>
 </html>
