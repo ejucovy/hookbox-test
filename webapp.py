@@ -2,6 +2,16 @@ import json
 from webob import Request, Response
 from paste.httpserver import serve
 
+letters = "abcdefghijklmnopqrstuvwxyz"
+import random
+
+def pick_name():
+    name = []
+    length = random.randint(5, 10)
+    for i in range(length):
+        name.append(random.choice(letters))
+    return ''.join(name)
+
 class App(object):
 
     def __call__(self, environ, start_response):
@@ -24,13 +34,14 @@ class App(object):
         return _index
 
     def connect(self, req):
-        return [True, {"name": "guest"}]
+        return [True, {"name": pick_name()}]
+    
 
     def disconnect(self, req):
         return [True, {}]
 
     def create_channel(self, req):
-        return [True, {'history_size': 0, "reflective": True, "presenceful": True}]
+        return [True, {'history_size': 0, "reflective": False, "presenceful": True}]
 
     def subscribe(self, req):
         return [True, {}]
@@ -41,4 +52,4 @@ class App(object):
     def publish(self, req):
         return [True, {}]
 
-serve(App(), port="8080")
+serve(App(), port="8000")
